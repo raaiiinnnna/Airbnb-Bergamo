@@ -11,23 +11,21 @@ from sklearn.metrics import silhouette_score
 
 st.set_page_config(page_title="Airbnb Asset Analytics", layout="wide", page_icon="🏢")
 
-# --- DATA ENGINE (V4 - Anti Gagal) ---
+# --- DATA ENGINE ---
 @st.cache_data
 def load_and_process_data():
-    # Mengunduh data langsung dari server agar selalu sinkron
     url = "https://data.insideairbnb.com/italy/lombardia/bergamo/2025-09-29/data/listings.csv.gz"
     df = pd.read_csv(url, compression='gzip')
     
-    # 1. Fase Persiapan & Pembersihan
     cols = ['id', 'room_type', 'accommodates', 'amenities', 'price', 'latitude', 'longitude']
     df_proc = df[cols].copy()
     df_proc.dropna(subset=['room_type', 'accommodates', 'amenities', 'price', 'latitude', 'longitude'], inplace=True)
     
-    # Konversi Harga
+    # PERBAIKAN: Pastikan accommodates & price adalah angka murni untuk mencegah Error Scaling
+    df_proc['accommodates'] = pd.to_numeric(df_proc['accommodates'], errors='coerce')
     df_proc['price'] = pd.to_numeric(df_proc['price'].astype(str).str.replace(r'[\$,]', '', regex=True), errors='coerce')
-    df_proc.dropna(subset=['price'], inplace=True)
+    df_proc.dropna(subset=['price', 'accommodates'], inplace=True)
     
-    # 2. Ekstraksi Amenities Menggunakan Machine Learning Logic
     def parse_am(val):
         cleaned = str(val).strip('[]{}').replace('"', '').replace("'", "")
         return [i.strip() for i in cleaned.split(',') if i.strip()]
@@ -37,7 +35,6 @@ def load_and_process_data():
     mlb = MultiLabelBinarizer()
     am_encoded = mlb.fit_transform(df_proc['am_list'])
     
-    # Ambil hanya yang > 5% frekuensi kemunculannya
     am_df = pd.DataFrame(am_encoded, columns=mlb.classes_, index=df_proc.index)
     valid_cols = am_df.columns[am_df.mean() > 0.05]
     am_df_filtered = am_df[valid_cols]
@@ -49,19 +46,19 @@ with st.spinner("Mensinkronkan Data dengan Server Airbnb..."):
 
 # --- MODELING ENGINE ---
 def run_kmeans(k_val):
-    # Encoding Room Type
-    room_encoded = pd.get_dummies(df_main['room_type'], prefix='room')
+    # PERBAIKAN: Paksa output get_dummies menjadi float agar dibaca oleh StandardScaler
+    room_encoded = pd.get_dummies(df_main['room_type'], prefix='room', dtype=float)
     X = pd.concat([df_main[['accommodates']], room_encoded, df_amenities], axis=1)
     
-    # Scaling
+    # PERBAIKAN UTAMA: Paksa seluruh isi matriks X menjadi angka desimal
+    X = X.astype(float)
+    
     scaler = StandardScaler()
     X_scaled = scaler.fit_transform(X)
     
-    # PCA Fix 2 Komponen (Untuk Scatter Plot yang stabil)
     pca = PCA(n_components=2, random_state=42)
     X_pca = pca.fit_transform(X_scaled)
     
-    # KMeans
     km = KMeans(n_clusters=k_val, random_state=42, n_init=10)
     clusters = km.fit_predict(X_pca)
     
@@ -102,7 +99,6 @@ with tabs[1]:
     col_v1, col_v2 = st.columns(2)
     with col_v1:
         st.subheader("Elbow Method")
-        # Pre-calculated inertia for K=2-6
         inertias = [run_kmeans(i)[2] for i in range(2, 7)]
         fig_elb = px.line(x=range(2, 7), y=inertias, markers=True, labels={'x':'K', 'y':'Inertia'})
         st.plotly_chart(fig_elb, use_container_width=True)
