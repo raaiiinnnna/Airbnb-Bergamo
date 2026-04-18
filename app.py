@@ -65,7 +65,7 @@ def run_kmeans(k_val):
     return X_pca, clusters, km.inertia_
 
 # --- UI LAYOUT ---
-st.title("🏛️ Dashboard Manajemen Aset Strategis: Airbnb Bergamo")
+st.title("🏛️ Dashboard Manajemen Aset: Airbnb Bergamo")
 st.sidebar.header("Sinkronisasi Orange")
 k_select = st.sidebar.selectbox("Pilih Jumlah Klaster (Set ke 2 untuk Orange)", options=[2, 3, 4, 5, 6], index=0)
 
