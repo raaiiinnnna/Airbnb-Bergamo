@@ -70,7 +70,7 @@ def run_full_modeling(k_val):
     return X_pca, clusters, sil_scores
 
 # --- UI LAYOUT ---
-st.title("🏛️ Sistem Informasi Manajemen Aset Strategis: Airbnb Bergamo")
+st.title("🏛️ Dashboard Klasterisasi: Airbnb Bergamo")
 st.sidebar.header("Konfigurasi Model")
 k_select = st.sidebar.selectbox("Sinkronisasi Klaster (K)", options=[2, 3, 4, 5, 6], index=0)
 
@@ -78,7 +78,7 @@ X_pca, clusters, all_sil_scores = run_full_modeling(k_select)
 df_main['Cluster'] = clusters
 df_main['Cluster_Label'] = "Kelompok " + df_main['Cluster'].astype(str)
 
-tabs = st.tabs(["📊 EDA & Persiapan", "📐 Validasi Model", "📍 Peta Lokasi", "💰 Validasi Ekonomi", "📋 Ringkasan Profil"])
+tabs = st.tabs(["📊 EDA & Persiapan", "📐 Model", "📍 Peta Lokasi", "💰 Validasi Ekonomi", "📋 Ringkasan Profil"])
 
 # --- TAB 1: EDA & PERSIAPAN ---
 with tabs[0]:
@@ -129,7 +129,7 @@ with tabs[1]:
     
     # Row 3: Amenities
     st.divider()
-    st.subheader("🛠️ Fasilitas Unggulan Interaktif")
+    st.subheader("🛠️ Fasilitas Unggulan")
     sel_cl = st.selectbox("Pilih Kelompok untuk Profil Fasilitas:", sorted(df_main['Cluster_Label'].unique()))
     cl_idx = df_main[df_main['Cluster_Label'] == sel_cl].index
     top_amenities = df_amenities.loc[cl_idx].mean().sort_values(ascending=False).head(10)
@@ -145,7 +145,7 @@ with tabs[2]:
                                 mapbox_style="carto-positron", height=600)
     st.plotly_chart(fig_map, use_container_width=True)
 
-# --- TAB 4: VALIDASI EKONOMI ---
+# --- TAB 4: VALIDASI HARGA ---
 with tabs[3]:
     st.header("Uji Realitas: Validasi Nilai Ekonomi")
     col_v_econ1, col_v_econ2 = st.columns(2)
