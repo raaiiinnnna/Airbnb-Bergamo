@@ -104,18 +104,28 @@ with tabs[0]:
 with tabs[1]:
     st.header("Metrik Validasi & Karakteristik Klaster")
     
-    # Row 1: Silhouette & Distribution
+    # Baris 1: Elbow Method dan Silhouette Score
     c_val1, c_val2 = st.columns(2)
     with c_val1:
-        fig_sil = px.line(x=range(2, 7), y=all_sil_scores, markers=True, title="Silhouette Score per Jumlah K",
+        st.subheader("Metode Elbow")
+        
+        fig_elb = px.line(x=range(2, 8), y=all_inertias, markers=True, 
+                          title="Penurunan Inertia (Elbow Method)",
+                          labels={'x': 'Jumlah Klaster (K)', 'y': 'Inertia'})
+        st.plotly_chart(fig_elb, use_container_width=True)
+        st.caption("Titik di mana penurunan inertia mulai melandai menunjukkan jumlah klaster yang efisien.")
+
+    with c_val2:
+        st.subheader("Silhouette Analysis")
+        fig_sil = px.line(x=range(2, 8), y=all_sil_scores, markers=True, 
+                          title="Skor Silhouette per K",
                           labels={'x': 'Jumlah Klaster (K)', 'y': 'Silhouette Score'})
         st.plotly_chart(fig_sil, use_container_width=True)
-    with c_val2:
-        fig_dist = px.bar(df_main['Cluster_Label'].value_counts().reset_index(), x='Cluster_Label', y='count',
-                          title="Distribusi Jumlah Aset per Kelompok", color='Cluster_Label')
-        st.plotly_chart(fig_dist, use_container_width=True)
+        st.caption("Skor Silhouette tertinggi menunjukkan pemisahan kelompok yang paling tegas.")
+
+    st.divider()
     
-    # Row 2: PCA & Room Type
+    # Baris 2: PCA Scatter Plot dan Distribusi Klaster
     c_val3, c_val4 = st.columns(2)
     with c_val3:
         df_pca = pd.DataFrame(data=X_pca, columns=['PC1', 'PC2'])
@@ -123,19 +133,26 @@ with tabs[1]:
         fig_pca = px.scatter(df_pca, x='PC1', y='PC2', color='Cluster', title="Visualisasi Kedekatan Aset (PCA)")
         st.plotly_chart(fig_pca, use_container_width=True)
     with c_val4:
+        fig_dist = px.bar(df_main['Cluster_Label'].value_counts().reset_index(), x='Cluster_Label', y='count',
+                          title="Jumlah Aset per Kelompok", color='Cluster_Label')
+        st.plotly_chart(fig_dist, use_container_width=True)
+
+    # Baris 3: Tipe Kamar dan Fasilitas Interaktif
+    st.divider()
+    c_val5, c_val6 = st.columns([1, 2])
+    with c_val5:
         fig_room = px.pie(df_main, names='room_type', color_discrete_sequence=px.colors.qualitative.Pastel,
                           title="Komposisi Tipe Kamar")
         st.plotly_chart(fig_room, use_container_width=True)
     
-    # Row 3: Amenities
-    st.divider()
-    st.subheader("🛠️ Fasilitas Unggulan")
-    sel_cl = st.selectbox("Pilih Kelompok untuk Profil Fasilitas:", sorted(df_main['Cluster_Label'].unique()))
-    cl_idx = df_main[df_main['Cluster_Label'] == sel_cl].index
-    top_amenities = df_amenities.loc[cl_idx].mean().sort_values(ascending=False).head(10)
-    fig_am_bar = px.bar(top_amenities, orientation='h', labels={'value': 'Frekuensi', 'index': 'Fasilitas'},
-                        title=f"10 Fasilitas Dominan pada {sel_cl}")
-    st.plotly_chart(fig_am_bar, use_container_width=True)
+    with c_val6:
+        st.subheader("🛠️ Fasilitas Unggulan")
+        sel_cl = st.selectbox("Pilih Kelompok untuk Profil Fasilitas:", sorted(df_main['Cluster_Label'].unique()))
+        cl_idx = df_main[df_main['Cluster_Label'] == sel_cl].index
+        top_amenities = df_amenities.loc[cl_idx].mean().sort_values(ascending=False).head(10)
+        fig_am_bar = px.bar(top_amenities, orientation='h', labels={'value': 'Frekuensi', 'index': 'Fasilitas'},
+                            title=f"10 Fasilitas Dominan pada {sel_cl}")
+        st.plotly_chart(fig_am_bar, use_container_width=True)
 
 # --- TAB 3: PETA LOKASI ---
 with tabs[2]:
